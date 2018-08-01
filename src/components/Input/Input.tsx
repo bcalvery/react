@@ -43,11 +43,36 @@ class Input extends UIComponent<any, any> {
     /** Shorthand for creating the HTML Input. */
     input: customPropTypes.itemShorthand,
 
+    /**
+     * Called on change.
+     *
+     * @param {SyntheticEvent} event - React's original SyntheticEvent.
+     * @param {object} data - All props and proposed value.
+     */
+    onChange: PropTypes.func,
+
+    /**
+     * Function called when the icon is clicked.
+     *
+     * @param {SyntheticEvent} event - React's original SyntheticEvent.
+     * @param {object} data - All props.
+     */
+    onIconClick: PropTypes.func,
+
     /** The HTML input type. */
     type: PropTypes.string,
   }
 
-  static handledProps = ['as', 'children', 'className', 'icon', 'input', 'type']
+  static handledProps = [
+    'as',
+    'children',
+    'className',
+    'icon',
+    'input',
+    'onChange',
+    'onIconClick',
+    'type',
+  ]
 
   static defaultProps = {
     as: 'div',
@@ -59,6 +84,12 @@ class Input extends UIComponent<any, any> {
   computeTabIndex = props => {
     if (!_.isNil(props.tabIndex)) return props.tabIndex
     if (props.onClick) return 0
+  }
+
+  handleChange = e => {
+    const value = _.get(e, 'target.value')
+
+    _.invoke(this.props, 'onChange', e, { ...this.props, value })
   }
 
   handleChildOverrides = (child, defaultProps) => ({
@@ -77,6 +108,7 @@ class Input extends UIComponent<any, any> {
     return [
       {
         ...htmlInputProps,
+        onChange: this.handleChange,
         type,
       },
       rest,
@@ -101,11 +133,25 @@ class Input extends UIComponent<any, any> {
   }
 
   renderComponent({ ElementType, classes, rest }) {
-    const { children, className, icon, input, type } = this.props
+    const { children, className, icon, input, type, onIconClick } = this.props
     const [htmlInputProps, restProps] = this.partitionProps()
 
     const inputClasses = classes.input
     const iconClasses = classes.icon
+
+    const iconProps = {
+      className: classes.icon,
+      ...(icon &&
+        typeof icon === 'string' && {
+          name: icon,
+          ...(onIconClick && { tabIndex: '0' }),
+        }),
+      ...(icon &&
+        typeof icon === 'object' && {
+          ...icon,
+          ...(icon.onClick && { tabIndex: '0' }),
+        }),
+    }
 
     // Render with children
     // ----------------------------------------
