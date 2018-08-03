@@ -3,6 +3,7 @@ import * as React from 'react'
 import * as _ from 'lodash'
 
 import {
+  AutoControlledComponent,
   childrenExist,
   createHTMLInput,
   customPropTypes,
@@ -19,7 +20,7 @@ import callable from '../../lib/callable'
  * An Input
  * @accessibility This is example usage of the accessibility tag.
  */
-class Input extends UIComponent<any, any> {
+class Input extends AutoControlledComponent<any, any> {
   static className = 'ui-input'
 
   static displayName = 'Input'
@@ -37,6 +38,12 @@ class Input extends UIComponent<any, any> {
     /** Additional classes. */
     className: PropTypes.string,
 
+    /** A property that will change the icon on the input and clear the input on click on Cancel */
+    clearable: PropTypes.bool,
+
+    /** The default value of the input string. */
+    defaultValue: PropTypes.string,
+
     /** Optional Icon to display inside the Input. */
     icon: customPropTypes.itemShorthand,
 
@@ -51,27 +58,24 @@ class Input extends UIComponent<any, any> {
      */
     onChange: PropTypes.func,
 
-    /**
-     * Function called when the icon is clicked.
-     *
-     * @param {SyntheticEvent} event - React's original SyntheticEvent.
-     * @param {object} data - All props.
-     */
-    onIconClick: PropTypes.func,
-
     /** The HTML input type. */
     type: PropTypes.string,
+
+    /** The value of the input. */
+    value: PropTypes.string,
   }
 
   static handledProps = [
     'as',
     'children',
     'className',
+    'clearable',
+    'defaultValue',
     'icon',
     'input',
     'onChange',
-    'onIconClick',
     'type',
+    'value',
   ]
 
   static defaultProps = {
@@ -81,6 +85,8 @@ class Input extends UIComponent<any, any> {
 
   inputRef: any
 
+  static autoControlledProps = ['value']
+
   computeTabIndex = props => {
     if (!_.isNil(props.tabIndex)) return props.tabIndex
     if (props.onClick) return 0
@@ -88,8 +94,11 @@ class Input extends UIComponent<any, any> {
 
   handleChange = e => {
     const value = _.get(e, 'target.value')
+    const { clearable } = this.props
 
     _.invoke(this.props, 'onChange', e, { ...this.props, value })
+
+    clearable && this.trySetState({ value })
   }
 
   handleChildOverrides = (child, defaultProps) => ({
@@ -99,8 +108,18 @@ class Input extends UIComponent<any, any> {
 
   handleInputRef = c => (this.inputRef = c)
 
+  handleOnIconClick = e => {
+    const { clearable, icon } = this.props
+    const { value } = this.state
+
+    if (clearable && value.length !== 0) {
+      this.trySetState({ value: '' })
+    }
+  }
+
   partitionProps = () => {
     const { type } = this.props
+    const { value } = this.state
 
     const unhandled = getUnhandledProps(Input, this.props)
     const [htmlInputProps, rest] = partitionHTMLProps(unhandled)
@@ -110,21 +129,30 @@ class Input extends UIComponent<any, any> {
         ...htmlInputProps,
         onChange: this.handleChange,
         type,
+        value,
       },
       rest,
     ]
   }
 
   computeIcon = () => {
-    const { icon } = this.props
+    const { clearable, icon } = this.props
+    const { value } = this.state
+
+    if (clearable && !_.isNil(icon) && value.length !== 0) {
+      return 'close'
+    }
 
     if (!_.isNil(icon)) return icon
+
     return null
   }
 
   handleIconOverrides = predefinedProps => {
     return {
       onClick: e => {
+        this.handleOnIconClick(e)
+
         this.inputRef.focus()
         _.invoke(predefinedProps, 'onClick', e, this.props)
       },
@@ -133,25 +161,11 @@ class Input extends UIComponent<any, any> {
   }
 
   renderComponent({ ElementType, classes, rest }) {
-    const { children, className, icon, input, type, onIconClick } = this.props
+    const { children, className, clearable, icon, input, type } = this.props
     const [htmlInputProps, restProps] = this.partitionProps()
 
     const inputClasses = classes.input
     const iconClasses = classes.icon
-
-    const iconProps = {
-      className: classes.icon,
-      ...(icon &&
-        typeof icon === 'string' && {
-          name: icon,
-          ...(onIconClick && { tabIndex: '0' }),
-        }),
-      ...(icon &&
-        typeof icon === 'object' && {
-          ...icon,
-          ...(icon.onClick && { tabIndex: '0' }),
-        }),
-    }
 
     // Render with children
     // ----------------------------------------
