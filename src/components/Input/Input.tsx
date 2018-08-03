@@ -3,7 +3,6 @@ import * as React from 'react'
 import * as _ from 'lodash'
 
 import {
-  AutoControlledComponent,
   childrenExist,
   createHTMLInput,
   customPropTypes,
@@ -20,7 +19,7 @@ import callable from '../../lib/callable'
  * An Input
  * @accessibility This is example usage of the accessibility tag.
  */
-class Input extends AutoControlledComponent<any, any> {
+class Input extends UIComponent<any, any> {
   static className = 'ui-input'
 
   static displayName = 'Input'
@@ -40,9 +39,6 @@ class Input extends AutoControlledComponent<any, any> {
 
     /** A property that will change the icon on the input and clear the input on click on Cancel */
     clearable: PropTypes.bool,
-
-    /** The default value of the input string. */
-    defaultValue: PropTypes.string,
 
     /** Optional Icon to display inside the Input. */
     icon: customPropTypes.itemShorthand,
@@ -70,7 +66,6 @@ class Input extends AutoControlledComponent<any, any> {
     'children',
     'className',
     'clearable',
-    'defaultValue',
     'icon',
     'input',
     'onChange',
@@ -87,18 +82,28 @@ class Input extends AutoControlledComponent<any, any> {
 
   static autoControlledProps = ['value']
 
+  constructor(props, context) {
+    super(props, context)
+
+    this.state = {
+      value: '',
+    }
+
+    this.handleChange = this.handleChange.bind(this)
+  }
+
   computeTabIndex = props => {
     if (!_.isNil(props.tabIndex)) return props.tabIndex
     if (props.onClick) return 0
   }
 
   handleChange = e => {
-    const value = _.get(e, 'target.value')
+    const inputValue = _.get(e, 'target.value')
     const { clearable } = this.props
 
-    _.invoke(this.props, 'onChange', e, { ...this.props, value })
+    _.invoke(this.props, 'onChange', e, { ...this.props, inputValue })
 
-    this.trySetState({ value })
+    this.setState({ value: inputValue })
   }
 
   handleChildOverrides = (child, defaultProps) => ({
@@ -113,7 +118,7 @@ class Input extends AutoControlledComponent<any, any> {
     const { value } = this.state
 
     if (clearable && value.length !== 0) {
-      this.trySetState({ value: '' })
+      this.setState({ value: '' })
     }
   }
 
