@@ -86,7 +86,7 @@ class Input extends UIComponent<any, any> {
     super(props, context)
 
     this.state = {
-      value: '',
+      value: props.value || '',
     }
 
     this.handleChange = this.handleChange.bind(this)
@@ -134,7 +134,7 @@ class Input extends UIComponent<any, any> {
         ...htmlInputProps,
         onChange: this.handleChange,
         type,
-        value,
+        value: value || '',
       },
       rest,
     ]
