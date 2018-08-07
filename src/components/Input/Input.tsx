@@ -13,7 +13,6 @@ import {
 import inputRules from './inputRules'
 import inputVariables from './inputVariables'
 import Icon from '../Icon'
-import callable from '../../lib/callable'
 
 /**
  * An Input
@@ -80,19 +79,12 @@ class Input extends UIComponent<any, any> {
 
   inputRef: any
 
-  static autoControlledProps = ['value']
-
   constructor(props, context) {
     super(props, context)
 
     this.state = {
       value: props.value || '',
     }
-  }
-
-  computeTabIndex = props => {
-    if (!_.isNil(props.tabIndex)) return props.tabIndex
-    if (props.onClick) return 0
   }
 
   handleChange = e => {
@@ -112,7 +104,7 @@ class Input extends UIComponent<any, any> {
   handleInputRef = c => (this.inputRef = c)
 
   handleOnClear = e => {
-    const { clearable, icon } = this.props
+    const { clearable } = this.props
     const { value } = this.state
 
     if (clearable && value.length !== 0) {
@@ -159,7 +151,7 @@ class Input extends UIComponent<any, any> {
         this.inputRef.focus()
         _.invoke(predefinedProps, 'onClick', e, this.props)
       },
-      tabIndex: this.computeTabIndex,
+      ...(predefinedProps.onClick && { tabIndex: '0' }),
     }
   }
 
